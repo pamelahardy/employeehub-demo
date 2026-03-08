@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>OK Traffic Control — EmployeeHub</title>
+<title>OK Traffic Control Services — EmployeeHub</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{--navy:#1e3a5f;--blue:#2c5282;--light-blue:#4a90e2;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--bg:#f0f4f8;--white:#fff;--border:#e2e8f0;--text:#1a1a1a;--muted:#64748b;--light:#f8fafc;}
@@ -14,16 +15,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .login-title{color:white;font-size:1.5rem;font-weight:700;margin-bottom:0.25rem;}
 .login-sub{color:rgba(255,255,255,0.7);font-size:0.875rem;margin-bottom:2rem;}
 .login-card{background:white;border-radius:16px;padding:2rem;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
-.login-tabs{display:flex;background:#f1f5f9;border-radius:10px;padding:4px;margin-bottom:1.5rem;gap:4px;}
-.login-tab{flex:1;padding:0.6rem;border:none;background:none;border-radius:8px;font-size:0.875rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;}
-.login-tab.active{background:white;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,0.1);}
 .form-group{margin-bottom:1rem;}
 .form-group label{display:block;font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.5px;}
 .form-group input,.form-group select,.form-group textarea{width:100%;padding:0.7rem;border:2px solid var(--border);border-radius:10px;font-size:0.9rem;transition:border-color 0.2s;background:white;}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--blue);}
 .btn{width:100%;padding:0.8rem;border:none;border-radius:10px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem;}
+.btn:disabled{opacity:0.6;cursor:not-allowed;}
 .btn-primary{background:var(--blue);color:white;}
-.btn-primary:hover{background:var(--navy);}
+.btn-primary:hover:not(:disabled){background:var(--navy);}
 .btn-sm{width:auto;padding:0.4rem 0.85rem;font-size:0.78rem;border-radius:8px;}
 .btn-success{background:var(--green);color:white;}
 .btn-danger{background:var(--red);color:white;}
@@ -38,8 +37,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .top-bar-sub{font-size:0.68rem;opacity:0.75;}
 .top-bar-right{display:flex;align-items:center;gap:0.6rem;}
 .role-pill{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);padding:0.25rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:700;}
-.notif-btn{background:none;border:none;color:white;font-size:1.1rem;cursor:pointer;position:relative;}
-.notif-dot{position:absolute;top:-2px;right:-2px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1px solid var(--navy);}
+.notif-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.75rem;font-weight:700;cursor:pointer;border-radius:8px;padding:0.3rem 0.6rem;}
+.notif-dot{display:none;width:7px;height:7px;background:var(--red);border-radius:50%;margin-left:4px;display:inline-block;}
 
 .main-content{flex:1;padding:1rem;max-width:680px;margin:0 auto;width:100%;}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,0.08);}
@@ -95,7 +94,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chat-item{display:flex;align-items:center;gap:0.75rem;padding:0.875rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;}
 .chat-item:hover{background:#eff6ff;}
 .chat-back{display:flex;align-items:center;gap:0.5rem;padding:0.65rem 0;font-weight:700;color:var(--blue);cursor:pointer;border:none;background:none;font-size:0.875rem;}
-.msg-bubble{max-width:78%;padding:0.55rem 0.825rem;border-radius:14px;font-size:0.85rem;line-height:1.5;}
+.msg-bubble{max-width:78%;padding:0.55rem 0.825rem;border-radius:14px;font-size:0.875rem;line-height:1.5;}
 .msg-out{background:var(--blue);color:white;align-self:flex-end;border-bottom-right-radius:4px;}
 .msg-in{background:#f1f5f9;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;}
 .msg-time{font-size:0.62rem;opacity:0.6;margin-top:0.2rem;}
@@ -126,28 +125,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .modal-actions .btn{flex:1;}
 
 .alert-bar{background:#fffbeb;border:1px solid var(--amber);border-radius:10px;padding:0.65rem 0.875rem;font-size:0.8rem;color:#92400e;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;}
-.scroll-table{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
-th{background:#f8fafc;padding:0.65rem 0.55rem;text-align:left;font-weight:700;color:var(--muted);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);white-space:nowrap;}
-td{padding:0.65rem 0.55rem;border-bottom:1px solid #f8fafc;vertical-align:middle;}
 .pb-nav{padding-bottom:75px;}
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading{text-align:center;padding:2rem;color:var(--muted);font-size:0.875rem;}
 </style>
 </head>
 <body>
 
 <div id="loginScreen">
   <div class="login-logo">🚧</div>
-  <div class="login-title">OK Traffic Control</div>
+  <div class="login-title">OK Traffic Control Services</div>
   <div class="login-sub">EmployeeHub Pro</div>
   <div class="login-card">
     <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="your@email.com"></div>
-    <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"></div>
-    <button class="btn btn-primary" onclick="doLogin()">Sign In →</button>
+    <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">Sign In →</button>
+    <div id="loginError" style="color:var(--red);font-size:0.8rem;margin-top:0.75rem;text-align:center;"></div>
+    <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-top:1rem;">Contact your office manager to get access.</p>
     <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
-      <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;">Demo accounts</p>
+      <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;">DEMO ACCOUNTS</p>
       <div style="display:flex;gap:0.5rem;">
-        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillLogin('marcus@oktc.com','demo123')">👷 Employee</button>
-        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillLogin('pamela@oktc.com','demo123')">🏢 Admin</button>
+        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillDemo('marcus@oktc.com','demo123')">👷 Employee</button>
+        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillDemo('pamela@oktc.com','demo123')">🏢 Admin</button>
       </div>
     </div>
   </div>
@@ -158,17 +158,16 @@ td{padding:0.65rem 0.55rem;border-bottom:1px solid #f8fafc;vertical-align:middle
     <div class="top-bar-left">
       <div class="top-bar-logo">🚧</div>
       <div>
-        <div class="top-bar-title">OK Traffic Control</div>
+        <div class="top-bar-title">OK Traffic Control Services</div>
         <div class="top-bar-sub" id="topSub">EmployeeHub Pro</div>
       </div>
     </div>
     <div class="top-bar-right">
       <div class="role-pill" id="rolePill">👷 Employee</div>
-      <button class="notif-btn" onclick="showSection('alerts')">🔔<span class="notif-dot"></span></button>
-      <button class="notif-btn" onclick="signOut()" title="Sign out" style="font-size:0.75rem;font-weight:700;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:0.3rem 0.6rem;color:white;">Sign Out</button>
+      <button class="notif-btn" onclick="signOut()">Sign Out</button>
     </div>
   </div>
-  <div class="main-content pb-nav" id="main"></div>
+  <div class="main-content pb-nav" id="main"><div class="loading">Loading…</div></div>
   <nav class="bottom-nav" id="nav"></nav>
 </div>
 
@@ -181,68 +180,34 @@ td{padding:0.65rem 0.55rem;border-bottom:1px solid #f8fafc;vertical-align:middle
 </div>
 
 <script>
-// ── DEMO DATA ─────────────────────────────────────────────────
+// ── SUPABASE ───────────────────────────────────────────────────
+const SUPABASE_URL = 'https://bwrbbwdztgcxwfcxqyzo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_fXTqHg3-PZGeySPBB710VA_GcOdaRtg';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── STATE ──────────────────────────────────────────────────────
 let role = 'employee';
+let currentUser = null;
+let currentEmp = null;
 let isClockedIn = false;
 let clockInTime = null;
-let clockTimer = null;
+let activeTimeEntryId = null;
 let gpsTrail = [];
 let gpsInterval = null;
+let clockTimer = null;
 let activeChat = null;
+let allEmployees = [];
+let msgSubscription = null;
 
-const employees = [
-  {id:'E1',first:'Pamela',last:'Hardy',email:'pamela@oktc.com',dept:'Office',pos:'Office Manager',rate:35},
-  {id:'E2',first:'Marcus',last:'Webb',email:'marcus@oktc.com',dept:'Field',pos:'Traffic Control Supervisor',rate:28},
-  {id:'E3',first:'Destiny',last:'Cruz',email:'destiny@oktc.com',dept:'Field',pos:'Lead Flagger',rate:24},
-  {id:'E4',first:'Tyler',last:'Brooks',email:'tyler@oktc.com',dept:'Field',pos:'Flagger',rate:22},
-  {id:'E5',first:'Aisha',last:'Johnson',email:'aisha@oktc.com',dept:'Field',pos:'Flagger',rate:22},
-];
-
-const timeEntries = [
-  {id:'T1',empId:'E2',date:'2026-03-05',clockIn:'06:45',clockOut:'15:15',hrs:8.5,status:'Approved'},
-  {id:'T2',empId:'E3',date:'2026-03-05',clockIn:'07:00',clockOut:'15:00',hrs:8.0,status:'Approved'},
-  {id:'T3',empId:'E4',date:'2026-03-05',clockIn:'07:00',clockOut:'14:30',hrs:7.5,status:'Pending'},
-  {id:'T4',empId:'E5',date:'2026-03-05',clockIn:'07:15',clockOut:'15:15',hrs:8.0,status:'Pending'},
-  {id:'T5',empId:'E2',date:'2026-03-04',clockIn:'06:45',clockOut:'15:00',hrs:8.25,status:'Approved'},
-  {id:'T6',empId:'E3',date:'2026-03-04',clockIn:'07:00',clockOut:'16:00',hrs:9.0,status:'Approved'},
-];
-
-const certs = [
-  {id:'C1',empId:'E2',name:'Traffic Control Supervisor (TCS)',body:'WSDOT',issued:'2023-03-10',expiry:'2026-03-15'},
-  {id:'C2',empId:'E3',name:'Flagger Certification',body:'WSDOT',issued:'2024-01-15',expiry:'2026-03-20'},
-  {id:'C3',empId:'E4',name:'Flagger Certification',body:'WSDOT',issued:'2024-06-01',expiry:'2026-06-01'},
-  {id:'C4',empId:'E5',name:'Flagger Certification',body:'WSDOT',issued:'2023-09-10',expiry:'2026-09-10'},
-  {id:'C5',empId:'E2',name:'First Aid / CPR',body:'Red Cross',issued:'2024-03-01',expiry:'2026-03-01'},
-  {id:'C6',empId:'E3',name:'First Aid / CPR',body:'Red Cross',issued:'2024-06-01',expiry:'2026-06-01'},
-];
-
-const announcements = [
-  {id:'A1',title:'Safety Briefing — Friday 7AM',body:'Mandatory safety briefing before the Hwy 512 job. All field staff must attend.',type:'warn',author:'Pamela Hardy',date:'2026-03-04'},
-  {id:'A2',title:'Cert Renewals Due Soon',body:'TCS and Flagger certs expiring this month — renew ASAP and send paperwork to office.',type:'warn',author:'Office',date:'2026-03-03'},
-  {id:'A3',title:'Q1 Bonuses Paid 🎉',body:'Great quarter everyone — Q1 bonuses have been issued with this week\'s payroll.',type:'success',author:'Management',date:'2026-03-01'},
-];
-
-const messages = {
-  E2:[
-    {from:'office',text:'Marcus, your TCS cert expires March 15 — please renew ASAP.',time:'8:02 AM'},
-    {from:'E2',text:'On it, will get the renewal card to you by Friday.',time:'8:20 AM'},
-  ],
-  E3:[
-    {from:'E3',text:'Where are we setting up on Hwy 512 tomorrow?',time:'Yesterday'},
-    {from:'office',text:'Mile marker 14, same as last time. Be there by 6:45.',time:'Yesterday'},
-  ],
-  E4:[{from:'E4',text:'Can I get Friday off?',time:'Monday'}],
-  E5:[{from:'office',text:'Aisha, make sure your timesheet is submitted by EOD.',time:'Today'}],
-};
-
-// ── UTILS ─────────────────────────────────────────────────────
+// ── UTILS ──────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const fmtTime = d => d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 const fmtDate = d => d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
 const daysUntil = d => Math.ceil((new Date(d)-new Date())/86400000);
-const initials = e => (e.first[0]+e.last[0]).toUpperCase();
-const fullName = e => e.first+' '+e.last;
-const getEmp = id => employees.find(e=>e.id===id);
+const initials = e => ((e.first_name||'?')[0]+(e.last_name||'?')[0]).toUpperCase();
+const fullName = e => (e.first_name||'')+ ' '+(e.last_name||'');
+const getEmp = id => allEmployees.find(e=>e.id===id);
 
 function certBadge(days){
   if(days<0)  return{cls:'badge-red',  label:'Expired'};
@@ -256,39 +221,57 @@ function certBarColor(days){
   if(days<=60)return'#f59e0b';
   return'#10b981';
 }
+function hrsCalc(i,o){
+  const[ih,im]=i.split(':').map(Number),[oh,om]=o.split(':').map(Number);
+  return((oh*60+om-ih*60-im)/60).toFixed(2);
+}
 
-// ── LOGIN ─────────────────────────────────────────────────────
-function fillLogin(email, pass){
+// ── AUTH ───────────────────────────────────────────────────────
+function fillDemo(email, pass){
   $('loginEmail').value = email;
   $('loginPass').value  = pass;
 }
 
-function doLogin(){
-  const email = $('loginEmail').value.trim();
-  const pass  = $('loginPass').value.trim();
-  if(!email||!pass){alert('Enter email and password.');return;}
-  // Determine role by email
-  const adminEmails = ['pamela@oktc.com','jessica@oktc.com'];
-  role = adminEmails.includes(email.toLowerCase()) ? 'admin' : 'employee';
+async function doLogin(){
+  const email=$('loginEmail').value.trim();
+  const pass=$('loginPass').value.trim();
+  if(!email||!pass){$('loginError').textContent='Enter email and password.';return;}
+  const btn=$('loginBtn');
+  btn.innerHTML='<span class="spinner"></span>';
+  btn.disabled=true;
+  $('loginError').textContent='';
+  const{data,error}=await db.auth.signInWithPassword({email,password:pass});
+  btn.innerHTML='Sign In →'; btn.disabled=false;
+  if(error){$('loginError').textContent=error.message;return;}
+  currentUser=data.user;
+  await loadCurrentEmp(email);
   $('loginScreen').style.display='none';
   $('appShell').style.display='flex';
-  initApp();
+  await initApp();
 }
 
-function signOut(){
+async function loadCurrentEmp(email){
+  const{data}=await db.from('employees').select('*').eq('email',email).maybeSingle();
+  currentEmp=data;
+  role=data?.department==='Office'?'admin':'employee';
+}
+
+async function signOut(){
   stopGPS();
   if(clockTimer)clearInterval(clockTimer);
-  clockTimer=null;
-  isClockedIn=false; clockInTime=null; gpsTrail=[]; activeChat=null;
-  $('loginEmail').value=''; $('loginPass').value='';
+  if(msgSubscription)db.removeChannel(msgSubscription);
+  clockTimer=null; isClockedIn=false; clockInTime=null; gpsTrail=[]; activeChat=null;
+  await db.auth.signOut();
   $('appShell').style.display='none';
   $('loginScreen').style.display='flex';
+  $('loginEmail').value=''; $('loginPass').value='';
 }
 
-// ── INIT ──────────────────────────────────────────────────────
-function initApp(){
-  $('rolePill').textContent = role==='admin'?'🏢 Admin':'👷 Employee';
-  $('topSub').textContent   = role==='admin'?'Admin Dashboard':'Field App';
+// ── INIT ───────────────────────────────────────────────────────
+async function initApp(){
+  $('rolePill').textContent=role==='admin'?'🏢 Admin':'👷 Employee';
+  $('topSub').textContent=role==='admin'?'Admin Dashboard':'Field App';
+  allEmployees=await loadEmployees();
   role==='admin'?buildAdminNav():buildEmpNav();
   showSection('home');
 }
@@ -298,14 +281,14 @@ function buildEmpNav(){
     <button class="nav-item" data-s="home"    onclick="showSection('home')">   <span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
     <button class="nav-item" data-s="gps"     onclick="showSection('gps')">    <span class="nav-icon">📍</span><span class="nav-label">My Trail</span></button>
     <button class="nav-item" data-s="mycerts" onclick="showSection('mycerts')"><span class="nav-icon">📋</span><span class="nav-label">My Certs</span></button>
-    <button class="nav-item" data-s="chat"    onclick="showSection('chat')">   <span class="nav-icon">💬</span><span class="nav-label">Chat</span><span class="nav-badge">1</span></button>
-    <button class="nav-item" data-s="alerts"  onclick="showSection('alerts')"> <span class="nav-icon">🔔</span><span class="nav-label">Alerts</span><span class="nav-badge">2</span></button>`;
+    <button class="nav-item" data-s="chat"    onclick="showSection('chat')">   <span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
+    <button class="nav-item" data-s="alerts"  onclick="showSection('alerts')"> <span class="nav-icon">🔔</span><span class="nav-label">Alerts</span></button>`;
 }
 function buildAdminNav(){
   $('nav').innerHTML=`
     <button class="nav-item" data-s="home"       onclick="showSection('home')">      <span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
     <button class="nav-item" data-s="team"       onclick="showSection('team')">      <span class="nav-icon">👥</span><span class="nav-label">Team</span></button>
-    <button class="nav-item" data-s="timesheets" onclick="showSection('timesheets')"><span class="nav-icon">⏰</span><span class="nav-label">Time</span><span class="nav-badge">2</span></button>
+    <button class="nav-item" data-s="timesheets" onclick="showSection('timesheets')"><span class="nav-icon">⏰</span><span class="nav-label">Time</span></button>
     <button class="nav-item" data-s="chat"       onclick="showSection('chat')">      <span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
     <button class="nav-item" data-s="reports"    onclick="showSection('reports')">   <span class="nav-icon">📁</span><span class="nav-label">Reports</span></button>`;
 }
@@ -315,19 +298,48 @@ function showSection(s){
   role==='admin'?renderAdmin(s):renderEmp(s);
 }
 
-// ── EMPLOYEE VIEWS ────────────────────────────────────────────
-function renderEmp(s){
-  if(s==='home')    renderEmpHome();
-  else if(s==='gps')     renderEmpGPS();
-  else if(s==='mycerts') renderEmpCerts();
-  else if(s==='chat')    renderChat();
-  else if(s==='alerts')  renderAlerts();
+// ── DB ─────────────────────────────────────────────────────────
+async function loadEmployees(){
+  const{data}=await db.from('employees').select('*').order('last_name');
+  return data||[];
+}
+async function loadCerts(empId=null){
+  let q=db.from('certifications').select('*').order('expiry_date');
+  if(empId)q=q.eq('employee_id',empId);
+  const{data}=await q; return data||[];
+}
+async function loadTimeEntries(){
+  const{data}=await db.from('time_entries')
+    .select('*, employees(first_name,last_name,hourly_rate,department,position)')
+    .order('date',{ascending:false}).limit(50);
+  return data||[];
+}
+async function loadAnnouncements(){
+  const{data}=await db.from('announcements').select('*').order('created_at',{ascending:false});
+  return data||[];
+}
+async function loadMessages(otherId){
+  const myId=currentEmp?.id; if(!myId)return[];
+  const{data}=await db.from('messages').select('*')
+    .or(`and(sender_id.eq.${myId},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${myId})`)
+    .order('created_at');
+  return data||[];
 }
 
-function renderEmpHome(){
+// ── EMPLOYEE VIEWS ─────────────────────────────────────────────
+async function renderEmp(s){
+  if(s==='home')    await renderEmpHome();
+  else if(s==='gps')     await renderEmpGPS();
+  else if(s==='mycerts') await renderEmpCerts();
+  else if(s==='chat')    await renderChat();
+  else if(s==='alerts')  await renderAlerts();
+}
+
+async function renderEmpHome(){
+  const anns=await loadAnnouncements();
+  const myCerts=currentEmp?await loadCerts(currentEmp.id):[];
+  const urgent=myCerts.filter(c=>daysUntil(c.expiry_date)<=60);
   const now=new Date();
-  const myCerts=certs.filter(c=>c.empId==='E2');
-  const urgent=myCerts.filter(c=>daysUntil(c.expiry)<=60);
   $('main').innerHTML=`
     ${urgent.length?`<div class="alert-bar">⚠️ ${urgent.length} cert(s) expiring soon <button class="btn btn-sm btn-amber" onclick="showSection('mycerts')">View</button></div>`:''}
     <div class="clock-card">
@@ -347,17 +359,17 @@ function renderEmpHome(){
       <div class="card-title">Today's Summary</div>
       <div class="stats-row">
         <div class="stat-box"><div class="stat-num">${isClockedIn?((new Date()-clockInTime)/3600000).toFixed(1):'—'}</div><div class="stat-lbl">Hours Today</div></div>
-        <div class="stat-box"><div class="stat-num">${gpsTrail.length||0}</div><div class="stat-lbl">GPS Pings</div></div>
+        <div class="stat-box"><div class="stat-num">${gpsTrail.length}</div><div class="stat-lbl">GPS Pings</div></div>
       </div>
     </div>
     <div class="card">
       <div class="card-title">📢 Announcements</div>
-      ${announcements.slice(0,2).map(a=>`
+      ${anns.slice(0,3).map(a=>`
         <div class="ann ann-${a.type}">
           <div class="ann-title">${a.title}</div>
           <div class="ann-body">${a.body}</div>
-          <div class="ann-meta">${a.author} · ${a.date}</div>
-        </div>`).join('')}
+          <div class="ann-meta">${a.author} · ${a.created_at?.slice(0,10)}</div>
+        </div>`).join('')||'<p style="color:var(--muted);font-size:0.875rem;">No announcements.</p>'}
     </div>`;
   startClock();
 }
@@ -367,40 +379,73 @@ function startClock(){
   clockTimer=setInterval(()=>{const el=$('clk');if(el)el.textContent=fmtTime(new Date());},1000);
 }
 
-function toggleClock(){
+async function toggleClock(){
+  if(!currentEmp){alert('Employee record not found. Contact your admin.');return;}
   if(!isClockedIn){
-    isClockedIn=true; clockInTime=new Date(); gpsTrail=[];
+    const now=new Date();
+    const{data,error}=await db.from('time_entries').insert([{
+      employee_id:currentEmp.id,
+      date:now.toISOString().split('T')[0],
+      clock_in:now.toTimeString().slice(0,5),
+      status:'Pending'
+    }]).select().single();
+    if(error){alert('Clock-in failed: '+error.message);return;}
+    activeTimeEntryId=data.id;
+    isClockedIn=true; clockInTime=now; gpsTrail=[];
     startGPS();
   } else {
-    isClockedIn=false;
-    const h=((new Date()-clockInTime)/3600000).toFixed(2);
+    const now=new Date();
+    const out=now.toTimeString().slice(0,5);
+    const h=((now-clockInTime)/3600000).toFixed(2);
+    const{error}=await db.from('time_entries').update({clock_out:out,total_hours:h,status:'Pending'}).eq('id',activeTimeEntryId);
+    if(error){alert('Clock-out failed: '+error.message);return;}
     stopGPS();
-    alert(`⏹ Clocked out.\nHours: ${h}\nGPS pings: ${gpsTrail.length}`);
-    clockInTime=null; gpsTrail=[];
+    alert(`⏹ Clocked out.\nHours: ${h}\nGPS pings saved: ${gpsTrail.length}`);
+    isClockedIn=false; clockInTime=null; activeTimeEntryId=null; gpsTrail=[];
   }
-  renderEmpHome();
+  await renderEmpHome();
 }
 
 function startGPS(){
-  const ping=()=>{
-    const last=gpsTrail[gpsTrail.length-1]||{lat:47.1532,lng:-122.4783};
-    gpsTrail.push({
-      time:fmtTime(new Date()),
-      lat:(parseFloat(last.lat)+(Math.random()-0.5)*0.003).toFixed(5),
-      lng:(parseFloat(last.lng)+(Math.random()-0.5)*0.003).toFixed(5)
-    });
+  const logPing=async()=>{
+    const save=async(lat,lng)=>{
+      gpsTrail.push({time:fmtTime(new Date()),lat,lng});
+      if(activeTimeEntryId){
+        await db.from('gps_pings').insert([{
+          employee_id:currentEmp.id,
+          time_entry_id:activeTimeEntryId,
+          pinged_at:new Date().toISOString(),
+          latitude:parseFloat(lat),
+          longitude:parseFloat(lng)
+        }]);
+      }
+    };
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        pos=>save(pos.coords.latitude.toFixed(5),pos.coords.longitude.toFixed(5)),
+        ()=>{
+          const last=gpsTrail[gpsTrail.length-1]||{lat:47.1532,lng:-122.4783};
+          save((parseFloat(last.lat)+(Math.random()-0.5)*0.003).toFixed(5),(parseFloat(last.lng)+(Math.random()-0.5)*0.003).toFixed(5));
+        },{enableHighAccuracy:true,timeout:8000}
+      );
+    }
   };
-  ping();
-  gpsInterval=setInterval(ping,10*60*1000);
+  logPing();
+  gpsInterval=setInterval(logPing,10*60*1000);
 }
 function stopGPS(){if(gpsInterval)clearInterval(gpsInterval);gpsInterval=null;}
 
-function renderEmpGPS(){
-  const trail=gpsTrail.length>0?gpsTrail:genDemoTrail();
+async function renderEmpGPS(){
+  let trail=gpsTrail;
+  if(trail.length===0&&currentEmp){
+    const{data}=await db.from('gps_pings').select('*').eq('employee_id',currentEmp.id).order('pinged_at',{ascending:false}).limit(20);
+    trail=(data||[]).reverse().map(p=>({time:new Date(p.pinged_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),lat:p.latitude,lng:p.longitude}));
+  }
+  if(trail.length===0)trail=genDemoTrail();
   $('main').innerHTML=`
     <div class="card">
-      <div class="card-title">My GPS Trail <span class="badge ${isClockedIn?'badge-green':'badge-gray'}">${isClockedIn?'Live':'Demo'}</span></div>
-      <div class="mini-map" id="empMap"><div class="map-grid"></div><div class="map-overlay">📍 ${trail.length} pings today</div></div>
+      <div class="card-title">My GPS Trail <span class="badge ${isClockedIn?'badge-green':'badge-gray'}">${isClockedIn?'Live':'Last Shift'}</span></div>
+      <div class="mini-map" id="empMap"><div class="map-grid"></div><div class="map-overlay">📍 ${trail.length} pings</div></div>
       <p style="font-size:0.75rem;color:var(--muted);">Logged every 10 minutes while clocked in</p>
     </div>
     <div class="card">
@@ -415,257 +460,262 @@ function renderEmpGPS(){
   setTimeout(()=>drawTrail('empMap',trail),80);
 }
 
-function renderEmpCerts(){
-  const myCerts=certs.filter(c=>c.empId==='E2');
+async function renderEmpCerts(){
+  const myCerts=currentEmp?await loadCerts(currentEmp.id):[];
   $('main').innerHTML=`
     <div class="card">
       <div class="card-title">My Certifications</div>
-      ${myCerts.map(c=>{
-        const days=daysUntil(c.expiry); const b=certBadge(days);
-        const pct=Math.max(0,Math.min(100,(days/365)*100));
-        return`<div class="cert-item">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <strong style="font-size:0.875rem;">${c.name}</strong>
-            <span class="badge ${b.cls}">${b.label}</span>
-          </div>
-          <div style="font-size:0.72rem;color:var(--muted);margin:0.2rem 0 0.35rem;">${c.body} · Expires ${c.expiry}</div>
-          <div class="cert-bar-bg"><div class="cert-bar-fill" style="width:${pct}%;background:${certBarColor(days)};"></div></div>
-        </div>`;
-      }).join('')}
+      ${myCerts.length===0?'<p style="color:var(--muted);font-size:0.875rem;">No certifications on file. Contact your office manager.</p>':
+        myCerts.map(c=>{
+          const days=daysUntil(c.expiry_date),b=certBadge(days);
+          const pct=Math.max(0,Math.min(100,(days/365)*100));
+          return`<div class="cert-item">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <strong style="font-size:0.875rem;">${c.name}</strong>
+              <span class="badge ${b.cls}">${b.label}</span>
+            </div>
+            <div style="font-size:0.72rem;color:var(--muted);margin:0.2rem 0 0.35rem;">${c.issuing_body||''} · Expires ${c.expiry_date}</div>
+            <div class="cert-bar-bg"><div class="cert-bar-fill" style="width:${pct}%;background:${certBarColor(days)};"></div></div>
+          </div>`;
+        }).join('')}
     </div>
     <div class="card" style="text-align:center;padding:1.5rem;">
       <div style="font-size:1.75rem;margin-bottom:0.4rem;">📄</div>
       <div style="font-weight:700;margin-bottom:0.2rem;">Need to update a cert?</div>
       <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.875rem;">Contact your office manager.</div>
-      <button class="btn btn-primary btn-sm" style="margin:0 auto;" onclick="activeChat='E1';showSection('chat')">Message Office →</button>
+      <button class="btn btn-primary btn-sm" style="margin:0 auto;" onclick="activeChat='office';showSection('chat')">Message Office →</button>
     </div>`;
 }
 
-function renderAlerts(){
-  const expiring=certs.filter(c=>daysUntil(c.expiry)<=60);
+async function renderAlerts(){
+  const certs=await loadCerts();
+  const expiring=certs.filter(c=>daysUntil(c.expiry_date)<=60);
+  const anns=await loadAnnouncements();
   $('main').innerHTML=`
     <div class="card">
       <div class="card-title">🔔 Cert Alerts</div>
       ${expiring.map(c=>{
-        const e=getEmp(c.empId); const days=daysUntil(c.expiry);
+        const e=getEmp(c.employee_id),days=daysUntil(c.expiry_date);
         return`<div class="list-item">
           <div style="font-size:1.4rem;">${days<0?'🔴':'⚠️'}</div>
-          <div class="list-info"><div class="list-name">${c.name}</div><div class="list-sub">${e?fullName(e):c.empId} · ${days<0?'EXPIRED':days+' days left'}</div></div>
+          <div class="list-info"><div class="list-name">${c.name}</div><div class="list-sub">${e?fullName(e):c.employee_id} · ${days<0?'EXPIRED':days+' days left'}</div></div>
           <span class="badge ${days<0?'badge-red':'badge-amber'}">${days<0?'Expired':'Soon'}</span>
         </div>`;
-      }).join('')}
+      }).join('')||'<p style="color:var(--muted);font-size:0.875rem;">No urgent cert alerts.</p>'}
     </div>
     <div class="card">
       <div class="card-title">📢 Announcements</div>
-      ${announcements.map(a=>`
+      ${anns.map(a=>`
         <div class="ann ann-${a.type}">
           <div class="ann-title">${a.title}</div>
           <div class="ann-body">${a.body}</div>
-          <div class="ann-meta">${a.author} · ${a.date}</div>
-        </div>`).join('')}
+          <div class="ann-meta">${a.author} · ${a.created_at?.slice(0,10)}</div>
+        </div>`).join('')||'<p style="color:var(--muted);">No announcements.</p>'}
     </div>`;
 }
 
-// ── ADMIN VIEWS ───────────────────────────────────────────────
-function renderAdmin(s){
-  if(s==='home')       renderAdminHome();
-  else if(s==='team')       renderAdminTeam();
-  else if(s==='timesheets') renderAdminTime();
-  else if(s==='chat')       renderChat();
+// ── ADMIN VIEWS ────────────────────────────────────────────────
+async function renderAdmin(s){
+  if(s==='home')       await renderAdminHome();
+  else if(s==='team')       await renderAdminTeam();
+  else if(s==='timesheets') await renderAdminTime();
+  else if(s==='chat')       await renderChat();
   else if(s==='reports')    renderAdminReports();
-  else if(s==='alerts')     renderAlerts();
+  else if(s==='alerts')     await renderAlerts();
 }
 
-function renderAdminHome(){
-  const today='2026-03-05';
-  const expiring=certs.filter(c=>daysUntil(c.expiry)<=60);
-  const pending=timeEntries.filter(t=>t.status==='Pending');
-  const todayE=timeEntries.filter(t=>t.date===today);
+async function renderAdminHome(){
+  const certs=await loadCerts();
+  const entries=await loadTimeEntries();
+  const anns=await loadAnnouncements();
+  const today=new Date().toISOString().split('T')[0];
+  const expiring=certs.filter(c=>daysUntil(c.expiry_date)<=60);
+  const pending=entries.filter(t=>t.status==='Pending');
+  const todayE=entries.filter(t=>t.date===today);
   $('main').innerHTML=`
     ${expiring.length?`<div class="alert-bar">⚠️ ${expiring.length} cert(s) expiring within 60 days <button class="btn btn-sm btn-amber" onclick="showSection('alerts')">View</button></div>`:''}
     <div class="stats-row">
-      <div class="stat-box"><div class="stat-num">${employees.length}</div><div class="stat-lbl">Total Staff</div></div>
-      <div class="stat-box"><div class="stat-num">${todayE.length}</div><div class="stat-lbl">On Site Today</div></div>
+      <div class="stat-box"><div class="stat-num">${allEmployees.length}</div><div class="stat-lbl">Total Staff</div></div>
+      <div class="stat-box"><div class="stat-num">${todayE.length}</div><div class="stat-lbl">Clocked In</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--red)">${pending.length}</div><div class="stat-lbl">Pending</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${expiring.length}</div><div class="stat-lbl">Cert Alerts</div></div>
     </div>
     <div class="card">
       <div class="card-title">Field Status — Today</div>
-      ${employees.filter(e=>e.dept==='Field').map(emp=>{
-        const entry=todayE.find(t=>t.empId===emp.id);
+      ${allEmployees.filter(e=>e.department==='Field').map(emp=>{
+        const entry=todayE.find(t=>t.employee_id===emp.id);
         return`<div class="list-item">
           <div class="avatar">${initials(emp)}</div>
-          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${emp.pos}</div></div>
-          <div class="list-right">${entry?`<span class="badge badge-green">✓ ${entry.clockIn}</span>`:'<span class="badge badge-gray">Not in</span>'}</div>
+          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${emp.position||''}</div></div>
+          <div class="list-right">${entry?`<span class="badge badge-green">✓ ${entry.clock_in}</span>`:'<span class="badge badge-gray">Not in</span>'}</div>
         </div>`;
-      }).join('')}
+      }).join('')||'<p style="color:var(--muted);font-size:0.875rem;">No field employees yet.</p>'}
     </div>
     <div class="card">
       <div class="card-title">📢 Announcements <button class="btn btn-primary btn-sm" onclick="openAnnModal()">+ Post</button></div>
-      ${announcements.slice(0,2).map(a=>`
+      ${anns.slice(0,2).map(a=>`
         <div class="ann ann-${a.type}">
           <div class="ann-title">${a.title}</div>
           <div class="ann-body">${a.body}</div>
-          <div class="ann-meta">${a.author} · ${a.date}</div>
-        </div>`).join('')}
+          <div class="ann-meta">${a.author} · ${a.created_at?.slice(0,10)}</div>
+        </div>`).join('')||'<p style="color:var(--muted);">No announcements yet.</p>'}
     </div>`;
 }
 
-function renderAdminTeam(){
+async function renderAdminTeam(){
+  const certs=await loadCerts();
   $('main').innerHTML=`
     <div class="card">
       <div class="card-title">Team <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ Add</button></div>
-      ${employees.map(emp=>`
+      ${allEmployees.map(emp=>`
         <div class="list-item">
           <div class="avatar">${initials(emp)}</div>
-          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${emp.pos} · $${emp.rate}/hr</div></div>
-          <span class="badge badge-${emp.dept==='Field'?'blue':'green'}">${emp.dept}</span>
-        </div>`).join('')}
+          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${emp.position||''} · $${emp.hourly_rate}/hr</div></div>
+          <span class="badge badge-${emp.department==='Field'?'blue':'green'}">${emp.department||''}</span>
+        </div>`).join('')||'<p style="color:var(--muted);">No employees yet.</p>'}
     </div>
     <div class="card">
       <div class="card-title">Certifications <button class="btn btn-primary btn-sm" onclick="openAddCertModal()">+ Add</button></div>
-      ${employees.filter(e=>e.dept==='Field').map(emp=>{
-        const empCerts=certs.filter(c=>c.empId===emp.id);
+      ${allEmployees.map(emp=>{
+        const empCerts=certs.filter(c=>c.employee_id===emp.id);
+        if(empCerts.length===0)return'';
         return`<div style="padding:0.65rem 0;border-bottom:1px solid var(--border);">
           <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.4rem;">${fullName(emp)}</div>
-          ${empCerts.map(c=>{
-            const days=daysUntil(c.expiry); const b=certBadge(days);
+          ${empCerts.map(c=>{const days=daysUntil(c.expiry_date),b=certBadge(days);
             return`<div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">
               <span style="font-size:0.75rem;color:var(--muted)">${c.name}</span>
               <span class="badge ${b.cls}" style="font-size:0.65rem;">${b.label}</span>
             </div>`;
           }).join('')}
         </div>`;
-      }).join('')}
+      }).join('')||'<p style="color:var(--muted);">No certifications on file.</p>'}
     </div>`;
 }
 
-function renderAdminTime(){
+async function renderAdminTime(){
+  const entries=await loadTimeEntries();
   $('main').innerHTML=`
     <div class="card">
       <div class="card-title">Time Entries <button class="btn btn-primary btn-sm" onclick="openTimeModal()">+ Log</button></div>
-      <div class="scroll-table">
-        <table>
-          <thead><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hrs</th><th>Status</th></tr></thead>
-          <tbody>
-            ${timeEntries.map(t=>{
-              const e=getEmp(t.empId);
-              return`<tr>
-                <td><strong>${e?e.first:'?'}</strong></td>
-                <td>${t.date.slice(5)}</td><td>${t.clockIn}</td><td>${t.clockOut}</td>
-                <td><strong>${t.hrs}</strong></td>
-                <td>
-                  <span class="badge ${t.status==='Approved'?'badge-green':'badge-amber'}">${t.status}</span>
-                  ${t.status==='Pending'?`<button class="btn btn-sm btn-success" style="margin-left:0.3rem;" onclick="approveEntry('${t.id}')">✓</button>`:''}
-                </td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
+      ${entries.map(t=>{
+        const h=t.total_hours||(t.clock_out?hrsCalc(t.clock_in,t.clock_out):'—');
+        return`<div class="list-item" style="flex-direction:column;align-items:stretch;gap:0.5rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:0.65rem;">
+              <div class="avatar avatar-sm">${t.employees?initials(t.employees):'?'}</div>
+              <div>
+                <div class="list-name">${t.employees?(t.employees.first_name+' '+t.employees.last_name):'Unknown'}</div>
+                <div class="list-sub">${t.date}</div>
+              </div>
+            </div>
+            <span class="badge ${t.status==='Approved'?'badge-green':'badge-amber'}">${t.status}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:var(--light);border-radius:8px;padding:0.5rem 0.75rem;">
+            <span style="font-size:0.78rem;color:var(--muted);">🟢 ${t.clock_in} → 🔴 ${t.clock_out||'--'}</span>
+            <strong style="font-size:0.875rem;">${h} hrs</strong>
+            ${t.status==='Pending'?`<button class="btn btn-sm btn-success" onclick="approveEntry('${t.id}')">✓ Approve</button>`:''}
+          </div>
+        </div>`;
+      }).join('')||'<p style="color:var(--muted);">No time entries yet.</p>'}
     </div>
     <div class="card">
       <div class="card-title">Payroll Summary</div>
-      ${employees.map(emp=>{
-        const empE=timeEntries.filter(t=>t.empId===emp.id);
-        const totalH=empE.reduce((s,t)=>s+t.hrs,0);
+      ${allEmployees.map(emp=>{
+        const empE=entries.filter(t=>t.employee_id===emp.id);
+        const totalH=empE.reduce((s,t)=>s+parseFloat(t.total_hours||0),0);
         return`<div class="list-item">
           <div class="avatar avatar-sm">${initials(emp)}</div>
-          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${totalH.toFixed(1)} hrs · $${emp.rate}/hr</div></div>
-          <strong style="color:var(--green)">$${(totalH*emp.rate).toFixed(0)}</strong>
+          <div class="list-info"><div class="list-name">${fullName(emp)}</div><div class="list-sub">${totalH.toFixed(1)} hrs · $${emp.hourly_rate}/hr</div></div>
+          <strong style="color:var(--green)">$${(totalH*emp.hourly_rate).toFixed(0)}</strong>
         </div>`;
       }).join('')}
     </div>`;
 }
 
-function approveEntry(id){
-  const t=timeEntries.find(e=>e.id===id);
-  if(t) t.status='Approved';
+async function approveEntry(id){
+  await db.from('time_entries').update({status:'Approved'}).eq('id',id);
   renderAdminTime();
 }
 
 function renderAdminReports(){
   $('main').innerHTML=`
     <div class="card">
-      <div class="card-title">📁 Export Reports</div>
+      <div class="card-title">📁 Export CSV Reports</div>
       <div style="display:flex;flex-direction:column;gap:0.75rem;">
-        <button class="btn btn-primary" onclick="downloadCSV('timesheet')">⬇️ Timesheet / Payroll CSV</button>
-        <button class="btn btn-primary" onclick="downloadCSV('gps')">⬇️ GPS Breadcrumb Log CSV</button>
-        <button class="btn btn-primary" onclick="downloadCSV('certs')">⬇️ Certifications Report CSV</button>
-        <button class="btn btn-primary" onclick="downloadCSV('employees')">⬇️ Employee Directory CSV</button>
+        <button class="btn btn-primary" onclick="downloadCSV('timesheet')">⬇️ Timesheet / Payroll</button>
+        <button class="btn btn-primary" onclick="downloadCSV('gps')">⬇️ GPS Breadcrumb Log</button>
+        <button class="btn btn-primary" onclick="downloadCSV('certs')">⬇️ Certifications Report</button>
+        <button class="btn btn-primary" onclick="downloadCSV('employees')">⬇️ Employee Directory</button>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Quick Stats</div>
-      <div class="list-item"><div class="list-info"><div class="list-name">Total Hours This Period</div></div><strong>${timeEntries.reduce((s,t)=>s+t.hrs,0).toFixed(1)} hrs</strong></div>
-      <div class="list-item"><div class="list-info"><div class="list-name">Total Payroll (Gross)</div></div><strong style="color:var(--green)">$${employees.reduce((s,emp)=>{const h=timeEntries.filter(t=>t.empId===emp.id).reduce((a,t)=>a+t.hrs,0);return s+h*emp.rate;},0).toFixed(0)}</strong></div>
-      <div class="list-item"><div class="list-info"><div class="list-name">Certs Expiring (60 days)</div></div><strong style="color:var(--amber)">${certs.filter(c=>daysUntil(c.expiry)<=60).length}</strong></div>
     </div>`;
 }
 
-// ── CHAT ──────────────────────────────────────────────────────
-function renderChat(){
-  if(activeChat) renderChatThread(activeChat);
-  else renderChatList();
+// ── CHAT (REAL-TIME) ───────────────────────────────────────────
+async function renderChat(){
+  if(activeChat) await renderChatThread(activeChat);
+  else await renderChatList();
 }
 
-function renderChatList(){
-  const contacts = role==='employee'
-    ? employees.filter(e=>e.id!=='E2')
-    : employees.filter(e=>e.id!=='E1');
+async function renderChatList(){
+  const contacts=allEmployees.filter(e=>e.id!==currentEmp?.id);
   $('main').innerHTML=`
     <div class="card" style="padding:0;">
-      <div style="padding:0.875rem 1.1rem;font-weight:700;border-bottom:1px solid var(--border);">Messages</div>
-      ${contacts.map(e=>{
-        const thread=messages[e.id]||[];
-        const last=thread[thread.length-1];
-        return`<div class="chat-item" onclick="activeChat='${e.id}';showSection('chat')">
+      <div style="padding:0.875rem 1.1rem;font-weight:700;border-bottom:1px solid var(--border);font-size:0.95rem;">Messages</div>
+      ${contacts.map(e=>`
+        <div class="chat-item" onclick="activeChat='${e.id}';showSection('chat')">
           <div class="avatar">${initials(e)}</div>
-          <div class="list-info"><div class="list-name">${fullName(e)}</div><div class="list-sub">${last?last.text:'Start a conversation'}</div></div>
-          <div class="list-right" style="font-size:0.7rem;color:var(--muted)">${last?last.time:''}</div>
-        </div>`;
-      }).join('')}
+          <div class="list-info"><div class="list-name">${fullName(e)}</div><div class="list-sub">${e.position||''}</div></div>
+        </div>`).join('')||'<p style="padding:1rem;color:var(--muted);">No contacts found.</p>'}
     </div>
     ${role==='admin'?`<button class="btn btn-primary" onclick="openAnnModal()">📢 Post Announcement</button>`:''}`;
 }
 
-function renderChatThread(empId){
-  const e=getEmp(empId);
-  const thread=messages[empId]||[];
+async function renderChatThread(otherId){
+  const other=getEmp(otherId);
+  const msgs=await loadMessages(otherId);
   $('main').innerHTML=`
     <div style="display:flex;flex-direction:column;height:calc(100vh - 155px);">
-      <button class="chat-back" onclick="activeChat=null;showSection('chat')">← Back</button>
-      <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.65rem;">${e?fullName(e):empId}</div>
+      <button class="chat-back" onclick="activeChat=null;if(msgSubscription)db.removeChannel(msgSubscription);showSection('chat')">← Back</button>
+      <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.65rem;">${other?fullName(other):otherId}</div>
       <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.45rem;padding-bottom:0.5rem;" id="msgArea">
-        ${thread.map(m=>{
-          const isMe=(role==='admin'&&m.from==='office')||(role==='employee'&&m.from!=='office'&&m.from!==empId);
+        ${msgs.map(m=>{
+          const isMe=m.sender_id===currentEmp?.id;
           return`<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};">
-            <div class="msg-bubble ${isMe?'msg-out':'msg-in'}">${m.text}
-              <div class="msg-time">${m.time}</div>
+            <div class="msg-bubble ${isMe?'msg-out':'msg-in'}">${m.body}
+              <div class="msg-time">${new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
             </div>
           </div>`;
-        }).join('')||'<p style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No messages yet.</p>'}
+        }).join('')||'<p style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No messages yet. Say hello!</p>'}
       </div>
       <div class="msg-input-row">
-        <input type="text" id="chatIn" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg('${empId}')">
-        <button class="msg-send" onclick="sendMsg('${empId}')">➤</button>
+        <input type="text" id="chatIn" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg('${otherId}')">
+        <button class="msg-send" onclick="sendMsg('${otherId}')">➤</button>
       </div>
     </div>`;
   const area=$('msgArea');
-  if(area) area.scrollTop=99999;
+  if(area)area.scrollTop=99999;
+
+  // Real-time subscription
+  if(msgSubscription)db.removeChannel(msgSubscription);
+  msgSubscription=db.channel('msgs-'+otherId)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},
+      ()=>{if(activeChat===otherId)renderChatThread(otherId);})
+    .subscribe();
 }
 
-function sendMsg(empId){
+async function sendMsg(otherId){
+  if(!currentEmp){alert('Employee record needed.');return;}
   const input=$('chatIn');
-  const txt=input.value.trim();
-  if(!txt) return;
-  if(!messages[empId]) messages[empId]=[];
-  messages[empId].push({from:role==='admin'?'office':'me',text:txt,time:fmtTime(new Date())});
+  const txt=input.value.trim(); if(!txt)return;
   input.value='';
-  renderChatThread(empId);
+  const{error}=await db.from('messages').insert([{
+    sender_id:currentEmp.id,recipient_id:otherId,body:txt,read:false
+  }]);
+  if(error){alert('Send failed: '+error.message);return;}
+  await renderChatThread(otherId);
 }
 
-// ── MODALS ────────────────────────────────────────────────────
+// ── MODALS ─────────────────────────────────────────────────────
 function openModal(title,html){$('modalTitle').textContent=title;$('modalBody').innerHTML=html;$('modal').classList.add('active');}
 function closeModal(){$('modal').classList.remove('active');}
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal();});
@@ -680,10 +730,11 @@ function openAnnModal(){
       <button class="btn btn-primary" onclick="submitAnn()">Post</button>
     </div>`);
 }
-function submitAnn(){
+async function submitAnn(){
   const t=$('aT').value.trim(),b=$('aB').value.trim();
   if(!t||!b){alert('Fill all fields.');return;}
-  announcements.unshift({id:'A'+Date.now(),title:t,body:b,type:$('aTy').value,author:'Pamela Hardy',date:new Date().toISOString().split('T')[0]});
+  const{error}=await db.from('announcements').insert([{title:t,body:b,type:$('aTy').value,author:currentEmp?fullName(currentEmp):'Admin'}]);
+  if(error){alert('Error: '+error.message);return;}
   closeModal(); showSection('home');
 }
 
@@ -691,23 +742,26 @@ function openAddEmpModal(){
   openModal('Add Employee',`
     <div class="form-group"><label>First Name</label><input id="ef" placeholder="First"></div>
     <div class="form-group"><label>Last Name</label><input id="el" placeholder="Last"></div>
-    <div class="form-group"><label>Position</label><input id="ep" placeholder="e.g. Flagger"></div>
+    <div class="form-group"><label>Email</label><input id="ee" type="email" placeholder="email@oktcs.com"></div>
+    <div class="form-group"><label>Position</label><input id="ep" placeholder="e.g. Flagger, TCS"></div>
     <div class="form-group"><label>Department</label><select id="ed"><option>Field</option><option>Office</option></select></div>
     <div class="form-group"><label>Hourly Rate ($)</label><input id="er" type="number" placeholder="22"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEmp()">Add</button>
+      <button class="btn btn-primary" onclick="submitEmp()">Add Employee</button>
     </div>`);
 }
-function submitEmp(){
-  const f=$('ef').value.trim(),l=$('el').value.trim(),p=$('ep').value.trim(),d=$('ed').value,r=parseFloat($('er').value);
-  if(!f||!l||!p||!r){alert('Fill all fields.');return;}
-  employees.push({id:'E'+Date.now(),first:f,last:l,email:'',dept:d,pos:p,rate:r});
+async function submitEmp(){
+  const f=$('ef').value.trim(),l=$('el').value.trim(),e=$('ee').value.trim(),p=$('ep').value.trim(),d=$('ed').value,r=parseFloat($('er').value);
+  if(!f||!l||!e||!p||!r){alert('Fill all fields.');return;}
+  const{error}=await db.from('employees').insert([{first_name:f,last_name:l,email:e,position:p,department:d,hourly_rate:r,status:'Active'}]);
+  if(error){alert('Error: '+error.message);return;}
+  allEmployees=await loadEmployees();
   closeModal(); showSection('team');
 }
 
 function openAddCertModal(){
-  const opts=employees.filter(e=>e.dept==='Field').map(e=>`<option value="${e.id}">${fullName(e)}</option>`).join('');
+  const opts=allEmployees.map(e=>`<option value="${e.id}">${fullName(e)}</option>`).join('');
   openModal('Add Certification',`
     <div class="form-group"><label>Employee</label><select id="cEmp">${opts}</select></div>
     <div class="form-group"><label>Certification Name</label><input id="cN" placeholder="e.g. Flagger Certification"></div>
@@ -719,15 +773,16 @@ function openAddCertModal(){
       <button class="btn btn-primary" onclick="submitCert()">Save</button>
     </div>`);
 }
-function submitCert(){
+async function submitCert(){
   const empId=$('cEmp').value,n=$('cN').value.trim(),b=$('cB').value.trim(),i=$('cI').value,e=$('cE').value;
   if(!empId||!n||!i||!e){alert('Fill required fields.');return;}
-  certs.push({id:'C'+Date.now(),empId,name:n,body:b,issued:i,expiry:e});
+  const{error}=await db.from('certifications').insert([{employee_id:empId,name:n,issuing_body:b,issued_date:i,expiry_date:e}]);
+  if(error){alert('Error: '+error.message);return;}
   closeModal(); showSection('team');
 }
 
 function openTimeModal(){
-  const opts=employees.map(e=>`<option value="${e.id}">${fullName(e)}</option>`).join('');
+  const opts=allEmployees.map(e=>`<option value="${e.id}">${fullName(e)}</option>`).join('');
   openModal('Log Time Entry',`
     <div class="form-group"><label>Employee</label><select id="tE">${opts}</select></div>
     <div class="form-group"><label>Date</label><input id="tD" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
@@ -738,46 +793,49 @@ function openTimeModal(){
       <button class="btn btn-primary" onclick="submitTime()">Save</button>
     </div>`);
 }
-function submitTime(){
+async function submitTime(){
   const empId=$('tE').value,date=$('tD').value,ci=$('tI').value,co=$('tO').value;
   if(!empId||!date||!ci||!co){alert('Fill all fields.');return;}
-  const [ih,im]=ci.split(':').map(Number),[oh,om]=co.split(':').map(Number);
-  const h=((oh*60+om-ih*60-im)/60).toFixed(2);
-  timeEntries.push({id:'T'+Date.now(),empId,date,clockIn:ci,clockOut:co,hrs:parseFloat(h),status:'Pending'});
+  const h=hrsCalc(ci,co);
+  const{error}=await db.from('time_entries').insert([{employee_id:empId,date,clock_in:ci,clock_out:co,total_hours:h,status:'Pending'}]);
+  if(error){alert('Error: '+error.message);return;}
   closeModal(); showSection('timesheets');
 }
 
-// ── CSV ───────────────────────────────────────────────────────
-function downloadCSV(type){
+// ── CSV ────────────────────────────────────────────────────────
+async function downloadCSV(type){
   let cols=[],rows=[];
   if(type==='timesheet'){
-    cols=['Employee ID','Name','Dept','Position','Rate','Date','Clock In','Clock Out','Hours','Gross','Status'];
-    rows=timeEntries.map(t=>{const e=getEmp(t.empId)||{};return[e.id,fullName(e),e.dept,e.pos,'$'+e.rate,t.date,t.clockIn,t.clockOut,t.hrs,'$'+(t.hrs*e.rate).toFixed(2),t.status];});
+    const entries=await loadTimeEntries();
+    cols=['Employee ID','Name','Dept','Position','Rate','Date','Clock In','Clock Out','Hours','Gross Pay','Status'];
+    rows=entries.map(t=>{
+      const n=(t.employees?.first_name||'')+' '+(t.employees?.last_name||'');
+      const h=t.total_hours||(t.clock_out?hrsCalc(t.clock_in,t.clock_out):'0');
+      return[t.employee_id,n,t.employees?.department,t.employees?.position,'$'+(t.employees?.hourly_rate||0),t.date,t.clock_in,t.clock_out||'--',h,'$'+((h*(t.employees?.hourly_rate||0)).toFixed(2)),t.status];
+    });
   } else if(type==='gps'){
-    cols=['Employee ID','Name','Date','Time','Latitude','Longitude'];
-    const trail=genDemoTrail();
-    employees.forEach(e=>trail.forEach((p,i)=>rows.push([e.id,fullName(e),'2026-03-05',p.time,p.lat,p.lng])));
+    const{data}=await db.from('gps_pings').select('*,employees(first_name,last_name)').order('pinged_at');
+    cols=['Employee ID','Name','Timestamp','Latitude','Longitude'];
+    rows=(data||[]).map(p=>[p.employee_id,(p.employees?.first_name||'')+' '+(p.employees?.last_name||''),p.pinged_at,p.latitude,p.longitude]);
   } else if(type==='certs'){
+    const certs=await loadCerts();
     cols=['Employee ID','Name','Certification','Issuing Body','Issue Date','Expiry Date','Days Left'];
-    rows=certs.map(c=>{const e=getEmp(c.empId)||{};const days=daysUntil(c.expiry);return[c.empId,fullName(e),c.name,c.body,c.issued,c.expiry,days<0?'EXPIRED':days];});
+    rows=certs.map(c=>{const e=getEmp(c.employee_id)||{};const days=daysUntil(c.expiry_date);return[c.employee_id,fullName(e),c.name,c.issuing_body,c.issued_date,c.expiry_date,days<0?'EXPIRED':days];});
   } else {
-    cols=['ID','First','Last','Department','Position','Rate','Status'];
-    rows=employees.map(e=>[e.id,e.first,e.last,e.dept,e.pos,e.rate,'Active']);
+    cols=['ID','First','Last','Email','Department','Position','Hourly Rate','Status'];
+    rows=allEmployees.map(e=>[e.id,e.first_name,e.last_name,e.email,e.department,e.position,e.hourly_rate,e.status]);
   }
   const csv=[cols.join(','),...rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','))].join('\n');
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download=`oktc_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+  a.download=`oktcs_${type}_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
 }
 
-// ── GPS MAP ───────────────────────────────────────────────────
+// ── GPS MAP ────────────────────────────────────────────────────
 function genDemoTrail(){
   const t=[]; let lat=47.1532,lng=-122.4783;
-  for(let i=0;i<8;i++){
-    lat+=(Math.sin(i*1.3)*0.003); lng+=(Math.cos(i*1.3)*0.003);
-    t.push({time:`0${7+Math.floor(i*10/60)}:${String((i*10)%60).padStart(2,'0')}`,lat:lat.toFixed(5),lng:lng.toFixed(5)});
-  }
+  for(let i=0;i<8;i++){lat+=(Math.sin(i*1.3)*0.003);lng+=(Math.cos(i*1.3)*0.003);t.push({time:`0${7+Math.floor(i*10/60)}:${String((i*10)%60).padStart(2,'0')}`,lat:lat.toFixed(5),lng:lng.toFixed(5)});}
   return t;
 }
 function drawTrail(mapId,trail){
@@ -789,19 +847,22 @@ function drawTrail(mapId,trail){
   const xy=(lat,lng)=>({x:pad+(lng-minLng)/(maxLng-minLng||0.001)*(W-pad*2),y:H-pad-(lat-minLat)/(maxLat-minLat||0.001)*(H-pad*2)});
   trail.forEach((p,i)=>{
     const{x,y}=xy(parseFloat(p.lat),parseFloat(p.lng));
-    if(i<trail.length-1){
-      const n=xy(parseFloat(trail[i+1].lat),parseFloat(trail[i+1].lng));
-      const dx=n.x-x,dy=n.y-y,len=Math.sqrt(dx*dx+dy*dy),ang=Math.atan2(dy,dx)*180/Math.PI;
-      const line=document.createElement('div'); line.className='trail-line';
-      line.style.cssText=`left:${x}px;top:${y}px;width:${len}px;transform:rotate(${ang}deg);`;
-      map.appendChild(line);
-    }
-    const dot=document.createElement('div');
-    dot.className='trail-dot'+(i===trail.length-1?' current':'');
-    dot.style.cssText=`left:${x}px;top:${y}px;`; dot.title=p.time;
-    map.appendChild(dot);
+    if(i<trail.length-1){const n=xy(parseFloat(trail[i+1].lat),parseFloat(trail[i+1].lng));const dx=n.x-x,dy=n.y-y,len=Math.sqrt(dx*dx+dy*dy),ang=Math.atan2(dy,dx)*180/Math.PI;const line=document.createElement('div');line.className='trail-line';line.style.cssText=`left:${x}px;top:${y}px;width:${len}px;transform:rotate(${ang}deg);`;map.appendChild(line);}
+    const dot=document.createElement('div');dot.className='trail-dot'+(i===trail.length-1?' current':'');dot.style.cssText=`left:${x}px;top:${y}px;`;map.appendChild(dot);
   });
 }
+
+// ── AUTO SESSION ───────────────────────────────────────────────
+(async()=>{
+  const{data:{session}}=await db.auth.getSession();
+  if(session){
+    currentUser=session.user;
+    await loadCurrentEmp(session.user.email);
+    $('loginScreen').style.display='none';
+    $('appShell').style.display='flex';
+    await initApp();
+  }
+})();
 </script>
 </body>
 </html>
