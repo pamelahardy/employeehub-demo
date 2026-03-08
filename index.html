@@ -753,8 +753,8 @@ body{font-family:"DM Sans",sans-serif;font-size:15px;line-height:1.5;background:
 
 <script>
 const USERS={
-  'marcus@oktc.com':{name:'Marcus',last:'Webb',init:'MW',role:'employee',color:'#2563EB'},
-  'pamela@oktc.com':{name:'Pamela',last:'Hardy',init:'PH',role:'admin',color:'#E8550A'}
+  'marcus@oktcs.net':{name:'Marcus',last:'Webb',init:'MW',role:'employee',color:'#2563EB'},
+  'pamela@oktcs.net':{name:'Pamela',last:'Hardy',init:'PH',role:'admin',color:'#E8550A'}
 };
 const PWD='demo123';
 let user=null,clocked=false,cinTime=null,gpsInt=null,clkInt=null,pings=[];
@@ -782,7 +782,7 @@ function doLogin(){
 }
 
 function demoLogin(r){
-  const email=r==='admin'?'pamela@oktc.com':'marcus@oktc.com';
+  const email=r==='admin'?'pamela@oktcs.net':'marcus@oktcs.net';
   const eInp=document.getElementById('li-e');
   const pInp=document.getElementById('li-p');
   document.getElementById('l-err').style.display='none';
@@ -1247,11 +1247,11 @@ function dlCSV(t){
     }else{
       rows=[
         ['Employee ID','First Name','Last Name','Email','Position','Pay Rate','Status'],
-        ['EMP001','Marcus','Webb','marcus@oktc.com','TCS','$28.00','Active'],
-        ['EMP002','Ray','Ortiz','ray@oktc.com','Flagger','$22.00','Active'],
-        ['EMP003','Tanya','Lowe','tanya@oktc.com','Flagger','$22.00','Active'],
-        ['EMP004','James','Dunn','james@oktc.com','TCS','$26.00','Active'],
-        ['EMP005','Sara','Kim','sara@oktc.com','Flagger','$22.00','Active']
+        ['EMP001','Marcus','Webb','marcus@oktcs.net','TCS','$28.00','Active'],
+        ['EMP002','Ray','Ortiz','ray@oktcs.net','Flagger','$22.00','Active'],
+        ['EMP003','Tanya','Lowe','tanya@oktcs.net','Flagger','$22.00','Active'],
+        ['EMP004','James','Dunn','james@oktcs.net','TCS','$26.00','Active'],
+        ['EMP005','Sara','Kim','sara@oktcs.net','Flagger','$22.00','Active']
       ];
       fn='OKTCS_Directory_'+d+'.csv';
     }
