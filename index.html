@@ -38,7 +38,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .top-bar-right{display:flex;align-items:center;gap:0.6rem;}
 .role-pill{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);padding:0.25rem 0.65rem;border-radius:20px;font-size:0.72rem;font-weight:700;}
 .notif-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.75rem;font-weight:700;cursor:pointer;border-radius:8px;padding:0.3rem 0.6rem;}
-.notif-dot{display:none;width:7px;height:7px;background:var(--red);border-radius:50%;margin-left:4px;display:inline-block;}
 
 .main-content{flex:1;padding:1rem;max-width:680px;margin:0 auto;width:100%;}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,0.08);}
@@ -146,8 +145,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
       <p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;">DEMO ACCOUNTS</p>
       <div style="display:flex;gap:0.5rem;">
-        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillDemo('marcus@oktc.com','demo123')">👷 Employee</button>
-        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillDemo('pamela@oktc.com','demo123')">🏢 Admin</button>
+        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillDemo('marcus@oktcs.net','demo123')">👷 Employee</button>
+        <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.5rem;" onclick="fillDemo('pamela@oktcs.net','demo123')">🏢 Admin</button>
       </div>
     </div>
   </div>
@@ -180,13 +179,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <script>
-// ── SUPABASE ───────────────────────────────────────────────────
 const SUPABASE_URL = 'https://bwrbbwdztgcxwfcxqyzo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fXTqHg3-PZGeySPBB710VA_GcOdaRtg';
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── STATE ──────────────────────────────────────────────────────
 let role = 'employee';
 let currentUser = null;
 let currentEmp = null;
@@ -200,7 +197,6 @@ let activeChat = null;
 let allEmployees = [];
 let msgSubscription = null;
 
-// ── UTILS ──────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const fmtTime = d => d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 const fmtDate = d => d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
@@ -226,7 +222,6 @@ function hrsCalc(i,o){
   return((oh*60+om-ih*60-im)/60).toFixed(2);
 }
 
-// ── AUTH ───────────────────────────────────────────────────────
 function fillDemo(email, pass){
   $('loginEmail').value = email;
   $('loginPass').value  = pass;
@@ -267,7 +262,6 @@ async function signOut(){
   $('loginEmail').value=''; $('loginPass').value='';
 }
 
-// ── INIT ───────────────────────────────────────────────────────
 async function initApp(){
   $('rolePill').textContent=role==='admin'?'🏢 Admin':'👷 Employee';
   $('topSub').textContent=role==='admin'?'Admin Dashboard':'Field App';
@@ -298,7 +292,6 @@ function showSection(s){
   role==='admin'?renderAdmin(s):renderEmp(s);
 }
 
-// ── DB ─────────────────────────────────────────────────────────
 async function loadEmployees(){
   const{data}=await db.from('employees').select('*').order('last_name');
   return data||[];
@@ -326,7 +319,6 @@ async function loadMessages(otherId){
   return data||[];
 }
 
-// ── EMPLOYEE VIEWS ─────────────────────────────────────────────
 async function renderEmp(s){
   if(s==='home')    await renderEmpHome();
   else if(s==='gps')     await renderEmpGPS();
@@ -514,7 +506,6 @@ async function renderAlerts(){
     </div>`;
 }
 
-// ── ADMIN VIEWS ────────────────────────────────────────────────
 async function renderAdmin(s){
   if(s==='home')       await renderAdminHome();
   else if(s==='team')       await renderAdminTeam();
@@ -650,7 +641,6 @@ function renderAdminReports(){
     </div>`;
 }
 
-// ── CHAT (REAL-TIME) ───────────────────────────────────────────
 async function renderChat(){
   if(activeChat) await renderChatThread(activeChat);
   else await renderChatList();
@@ -694,8 +684,6 @@ async function renderChatThread(otherId){
     </div>`;
   const area=$('msgArea');
   if(area)area.scrollTop=99999;
-
-  // Real-time subscription
   if(msgSubscription)db.removeChannel(msgSubscription);
   msgSubscription=db.channel('msgs-'+otherId)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},
@@ -715,7 +703,6 @@ async function sendMsg(otherId){
   await renderChatThread(otherId);
 }
 
-// ── MODALS ─────────────────────────────────────────────────────
 function openModal(title,html){$('modalTitle').textContent=title;$('modalBody').innerHTML=html;$('modal').classList.add('active');}
 function closeModal(){$('modal').classList.remove('active');}
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal();});
@@ -802,7 +789,6 @@ async function submitTime(){
   closeModal(); showSection('timesheets');
 }
 
-// ── CSV ────────────────────────────────────────────────────────
 async function downloadCSV(type){
   let cols=[],rows=[];
   if(type==='timesheet'){
@@ -832,7 +818,6 @@ async function downloadCSV(type){
   a.click();
 }
 
-// ── GPS MAP ────────────────────────────────────────────────────
 function genDemoTrail(){
   const t=[]; let lat=47.1532,lng=-122.4783;
   for(let i=0;i<8;i++){lat+=(Math.sin(i*1.3)*0.003);lng+=(Math.cos(i*1.3)*0.003);t.push({time:`0${7+Math.floor(i*10/60)}:${String((i*10)%60).padStart(2,'0')}`,lat:lat.toFixed(5),lng:lng.toFixed(5)});}
@@ -852,7 +837,6 @@ function drawTrail(mapId,trail){
   });
 }
 
-// ── AUTO SESSION ───────────────────────────────────────────────
 (async()=>{
   const{data:{session}}=await db.auth.getSession();
   if(session){
