@@ -885,10 +885,39 @@ function act(id){
   const el=document.getElementById(id);
   if(el){
     el.style.display='block';el.classList.add('active');
-    if(id==='vEG' && gpsMap){
-      setTimeout(function(){gpsMap.invalidateSize();},50);
+    if(id==='vEG'){
+      setTimeout(function(){
+        if(gpsMap) gpsMap.invalidateSize();
+        else if(!clocked) loadDemoPings();
+      },80);
     }
   }
+}
+
+function loadDemoPings(){
+  if(pings.length>0) return;
+  const route=[
+    {lat:47.2465,lng:-122.4371,t:'5:48 AM'},
+    {lat:47.2489,lng:-122.4388,t:'5:58 AM'},
+    {lat:47.2512,lng:-122.4402,t:'6:08 AM'},
+    {lat:47.2534,lng:-122.4418,t:'6:18 AM'},
+    {lat:47.2558,lng:-122.4431,t:'6:28 AM'},
+    {lat:47.2571,lng:-122.4445,t:'6:38 AM'},
+    {lat:47.2563,lng:-122.4461,t:'6:48 AM'},
+    {lat:47.2549,lng:-122.4455,t:'6:58 AM'},
+  ];
+  const today=new Date();
+  route.forEach(function(p){
+    const parts=p.t.split(':');
+    const h=parseInt(parts[0]);
+    const m=parseInt(parts[1]);
+    const d=new Date(today);
+    d.setHours(h,m,0);
+    pings.push({time:d,lat:p.lat.toFixed(5),lng:p.lng.toFixed(5),demo:true});
+  });
+  renderGPS();
+  const chip=document.getElementById('gpsStatusChip');
+  if(chip){chip.textContent='Demo trail';chip.className='chip o';}
 }
 
 function toggleClock(){
@@ -898,6 +927,9 @@ function toggleClock(){
   const chip=document.getElementById('eChip');
   if(!clocked){
     clocked=true; cinTime=new Date();
+    // Clear demo pings so real tracking starts fresh
+    pings=pings.filter(function(p){return !p.demo;});
+    if(pings.length===0) resetMap();
     btn.className='clk-btn co';
     btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Clock Out';
     dot.classList.add('on'); chip.textContent='On shift'; chip.className='chip g';
