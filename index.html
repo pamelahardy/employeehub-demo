@@ -1257,8 +1257,11 @@ async function loadMessages(){
     const otherId=emp[0].id;
     msgQuery='or=(and(sender_id.eq.'+user.dbId+',receiver_id.eq.'+otherId+'),and(sender_id.eq.'+otherId+',receiver_id.eq.'+user.dbId+'))&order=sent_at.asc&select=*';
   } else {
-    // Employee only talks to admin (Pamela)
-    msgQuery='or=(sender_id.eq.'+user.dbId+',receiver_id.eq.'+user.dbId+')&order=sent_at.asc&select=*';
+    // Employee only talks to admin — look up Pamela's id
+    const admin=await sb('GET','employees','','email=eq.pamela@oktcs.net&select=id');
+    if(!admin||!admin[0]) return;
+    const adminId=admin[0].id;
+    msgQuery='or=(and(sender_id.eq.'+user.dbId+',receiver_id.eq.'+adminId+'),and(sender_id.eq.'+adminId+',receiver_id.eq.'+user.dbId+'))&order=sent_at.asc&select=*';
   }
   const data=await sb('GET','messages','',msgQuery);
   // If Supabase fails, keep whatever is showing
@@ -1270,9 +1273,12 @@ async function loadMessages(){
   const thrId=user.role==='admin'?'aMT':'eMT';
   const thr=document.getElementById(thrId);
   if(!thr) return;
+  // Build a name map from thread context
+  const threadNameMap={'marcus':'Marcus','ray':'Ray','tanya':'Tanya'};
+  const otherName=user.role==='admin'?(threadNameMap[currentThread]||'Employee'):'Office';
   thr.innerHTML=data.map(function(m){
     const isSelf=m.sender_id===user.dbId;
-    const senderName=isSelf?'You':(user.role==='admin'?'Marcus':'Office');
+    const senderName=isSelf?'You':otherName;
     const t=new Date(m.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const delBtn=isSelf?'<button class="bbl-del" onclick="deleteMsgDb('+m.id+')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>':'';
     return '<div class="bbl-wrap '+(isSelf?'self':'other')+'">'
