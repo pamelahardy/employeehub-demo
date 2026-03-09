@@ -324,6 +324,9 @@ body{font-family:"DM Sans",sans-serif;font-size:15px;line-height:1.5;background:
 .bbl-del{opacity:0;background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);transition:opacity .15s;flex-shrink:0}
 .bbl-wrap:hover .bbl-del{opacity:1}
 .bbl-del:hover{color:#e53e3e}
+@media(max-width:767px){
+  .bbl-del{opacity:1;color:var(--muted)}
+}
 .msg-cmp{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
 .msg-i{flex:1;border:1.5px solid var(--border);border-radius:50px;padding:10px 16px;font-size:14px;font-family:"DM Sans",sans-serif;color:var(--ink);background:var(--off);outline:none;transition:border-color .15s,background .15s}
 .msg-i:focus{border-color:var(--ink);background:var(--white)}
@@ -1178,24 +1181,47 @@ let msgPollInterval=null;
 let lastMsgId=0;
 
 // Demo fallback messages shown when Supabase is unavailable (local testing)
-const DEMO_MESSAGES=[
-  {id:1,from:'office',name:'Office',body:'Hey Marcus — SR-99 Mon–Wed, 6am–3pm.',time:'2h ago'},
-  {id:2,from:'marcus',name:'Marcus',body:'Got it, thanks Pamela!',time:'1h ago'},
-  {id:3,from:'office',name:'Office',body:'Reminder to renew your flagger cert before April 1.',time:'1h ago'},
-  {id:4,from:'marcus',name:'Marcus',body:'See you Monday!',time:'45m ago'},
-];
+// Demo messages per thread
+const ALL_DEMO_THREADS={
+  'marcus': [
+    {id:1,from:'office',body:'Hey Marcus — SR-99 Mon–Wed, 6am–3pm.',time:'2h ago'},
+    {id:2,from:'marcus',body:'Got it, thanks Pamela!',time:'1h ago'},
+    {id:3,from:'office',body:'Reminder to renew your flagger cert before April 1.',time:'1h ago'},
+    {id:4,from:'marcus',body:'See you Monday!',time:'45m ago'},
+  ],
+  'ray': [
+    {id:5,from:'office',body:'Ray — you’re on I-405 Tuesday, 7am start.',time:'3h ago'},
+    {id:6,from:'ray',body:'What time does I-405 start?',time:'2h ago'},
+    {id:7,from:'office',body:'7am sharp. Meet at the staging area.',time:'2h ago'},
+  ],
+  'tanya': [
+    {id:8,from:'office',body:'Tanya — SR-99 Wednesday is confirmed.',time:'Yesterday'},
+    {id:9,from:'tanya',body:'Thanks for the update!',time:'Yesterday'},
+  ],
+  'office': [
+    {id:1,from:'office',body:'Hey Marcus — SR-99 Mon–Wed, 6am–3pm.',time:'2h ago'},
+    {id:2,from:'marcus',body:'Got it, thanks Pamela!',time:'1h ago'},
+    {id:3,from:'office',body:'Reminder to renew your flagger cert before April 1.',time:'1h ago'},
+    {id:4,from:'marcus',body:'See you Monday!',time:'45m ago'},
+  ]
+};
+
+let currentThread='marcus'; // default for admin; 'office' for employee
 
 function renderDemoMessages(){
   const thrId=user.role==='admin'?'aMT':'eMT';
   const thr=document.getElementById(thrId);
   if(!thr) return;
-  thr.innerHTML=DEMO_MESSAGES.map(function(m){
+  const threadKey=user.role==='employee'?'office':currentThread;
+  const msgs=ALL_DEMO_THREADS[threadKey]||[];
+  thr.innerHTML=msgs.map(function(m){
     const isSelf=(user.role==='admin'&&m.from==='office')||(user.role==='employee'&&m.from==='marcus');
+    const senderName=m.from==='office'?'Office':m.from==='marcus'?'Marcus':m.from==='ray'?'Ray':'Tanya';
     const delBtn=isSelf?'<button class="bbl-del" onclick="removeDemoMsg('+m.id+')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>':'';
     return '<div class="bbl-wrap '+(isSelf?'self':'other')+'">'
       +delBtn
       +'<div class="bbl '+(isSelf?'s':'r')+'">'+m.body
-      +'<div class="bbl-m">'+(isSelf?'You':m.name)+' &middot; '+m.time+'</div>'
+      +'<div class="bbl-m">'+(isSelf?'You':senderName)+' &middot; '+m.time+'</div>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -1204,8 +1230,11 @@ function renderDemoMessages(){
 
 function removeDemoMsg(id){
   if(!confirm('Delete this message?')) return;
-  const idx=DEMO_MESSAGES.findIndex(function(m){return m.id===id;});
-  if(idx>-1) DEMO_MESSAGES.splice(idx,1);
+  const threadKey=user.role==='employee'?'office':currentThread;
+  const msgs=ALL_DEMO_THREADS[threadKey];
+  if(!msgs) return;
+  const idx=msgs.findIndex(function(m){return m.id===id;});
+  if(idx>-1) msgs.splice(idx,1);
   renderDemoMessages();
 }
 
@@ -1272,10 +1301,11 @@ async function sm(w){
   // If no Supabase connection, add to demo thread
   if(!user||!user.dbId){
     const newId=Date.now();
-    DEMO_MESSAGES.push({
+    const threadKey=user.role==='employee'?'office':currentThread;
+    if(!ALL_DEMO_THREADS[threadKey]) ALL_DEMO_THREADS[threadKey]=[];
+    ALL_DEMO_THREADS[threadKey].push({
       id:newId,
-      from:user&&user.role==='admin'?'office':'marcus',
-      name:user&&user.role==='admin'?'Office':(user?user.name:'Marcus'),
+      from:user.role==='admin'?'office':'marcus',
       body:txt,
       time:'just now'
     });
@@ -1287,7 +1317,9 @@ async function sm(w){
   const rec=await sb('GET','employees','','email=eq.'+otherEmail+'&select=id');
   if(!rec||!rec[0]){
     // Supabase failed — add to demo thread
-    DEMO_MESSAGES.push({id:Date.now(),from:user.role==='admin'?'office':'marcus',name:user.role==='admin'?'Office':user.name,body:txt,time:'just now'});
+    const threadKey2=user.role==='employee'?'office':currentThread;
+    if(!ALL_DEMO_THREADS[threadKey2]) ALL_DEMO_THREADS[threadKey2]=[];
+    ALL_DEMO_THREADS[threadKey2].push({id:Date.now(),from:user.role==='admin'?'office':'marcus',body:txt,time:'just now'});
     renderDemoMessages();
     return;
   }
@@ -1297,7 +1329,16 @@ async function sm(w){
     body: txt,
     sent_at: new Date().toISOString()
   });
-  loadMessages();
+  // Add to local demo thread so it shows immediately + delete works locally
+  const threadKey3=user.role==='employee'?'office':currentThread;
+  if(!ALL_DEMO_THREADS[threadKey3]) ALL_DEMO_THREADS[threadKey3]=[];
+  ALL_DEMO_THREADS[threadKey3].push({
+    id:Date.now(),
+    from:user.role==='admin'?'office':'marcus',
+    body:txt,
+    time:'just now'
+  });
+  renderDemoMessages();
 }
 
 function openThread(el,name){
@@ -1305,6 +1346,10 @@ function openThread(el,name){
   document.querySelectorAll('.ch-li').forEach(function(c){c.classList.remove('act');});
   el.classList.add('act');
   el.querySelectorAll('.unrd').forEach(function(d){d.remove();});
+  // Set current thread key from name
+  const nameMap={'Marcus Webb':'marcus','Ray Ortiz':'ray','Tanya Lowe':'tanya'};
+  currentThread=nameMap[name]||'marcus';
+  renderDemoMessages();
 }
 
 function postAnn(){
