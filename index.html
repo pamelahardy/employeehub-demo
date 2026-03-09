@@ -895,7 +895,7 @@ function boot(u,email){
 
 function signOut(){
   user=null; clocked=false;
-  stopGPS(); clearInterval(clkInt); stopMsgPoll(); pings=[]; usingRealMessages=false;
+  stopGPS(); clearInterval(clkInt); stopMsgPoll(); pings=[]; usingRealMessages=false; for(var k in empIdCache) delete empIdCache[k];
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('li-e').value='';
@@ -1238,44 +1238,46 @@ function removeDemoMsg(id){
   renderDemoMessages();
 }
 
+// Cache employee IDs so we don't look them up on every poll
+const empIdCache={};
+
+async function getEmpId(email){
+  if(empIdCache[email]) return empIdCache[email];
+  const res=await sb('GET','employees','','email=eq.'+email+'&select=id');
+  if(res&&res[0]){ empIdCache[email]=res[0].id; return res[0].id; }
+  return null;
+}
+
 // Load messages from Supabase
 async function loadMessages(){
-  if(!user) return;
-  // If no dbId yet (local testing), show demo messages
-  if(!user.dbId){
-    renderDemoMessages();
-    return;
-  }
-  // For admin, filter by the currently selected thread person
-  let msgQuery;
-  if(user.role==='admin'){
-    // Look up the selected employee's dbId
-    const threadEmails={'marcus':'marcus@oktcs.net','ray':'ray@oktcs.net','tanya':'tanya@oktcs.net'};
-    const threadEmail=threadEmails[currentThread]||'marcus@oktcs.net';
-    const emp=await sb('GET','employees','','email=eq.'+threadEmail+'&select=id');
-    if(!emp||!emp[0]) return;
-    const otherId=emp[0].id;
-    msgQuery='or=(and(sender_id.eq.'+user.dbId+',receiver_id.eq.'+otherId+'),and(sender_id.eq.'+otherId+',receiver_id.eq.'+user.dbId+'))&order=sent_at.asc&select=*';
-  } else {
-    // Employee only talks to admin — look up Pamela's id
-    const admin=await sb('GET','employees','','email=eq.pamela@oktcs.net&select=id');
-    if(!admin||!admin[0]) return;
-    const adminId=admin[0].id;
-    msgQuery='or=(and(sender_id.eq.'+user.dbId+',receiver_id.eq.'+adminId+'),and(sender_id.eq.'+adminId+',receiver_id.eq.'+user.dbId+'))&order=sent_at.asc&select=*';
-  }
-  const data=await sb('GET','messages','',msgQuery);
-  // If Supabase fails, keep whatever is showing
-  if(!data) return;
-  // If no messages yet, keep demo messages showing
-  if(data.length===0) return;
-  // We have real messages — switch from demo to real
-  usingRealMessages=true;
+  if(!user||!user.dbId){ renderDemoMessages(); return; }
   const thrId=user.role==='admin'?'aMT':'eMT';
   const thr=document.getElementById(thrId);
   if(!thr) return;
-  // Build a name map from thread context
-  const threadNameMap={'marcus':'Marcus','ray':'Ray','tanya':'Tanya'};
-  const otherName=user.role==='admin'?(threadNameMap[currentThread]||'Employee'):'Office';
+
+  let otherId, otherName;
+  if(user.role==='admin'){
+    const threadEmails={'marcus':'marcus@oktcs.net','ray':'ray@oktcs.net','tanya':'tanya@oktcs.net'};
+    const threadNameMap={'marcus':'Marcus','ray':'Ray','tanya':'Tanya'};
+    const email=threadEmails[currentThread]||'marcus@oktcs.net';
+    otherName=threadNameMap[currentThread]||'Employee';
+    otherId=await getEmpId(email);
+  } else {
+    otherName='Office';
+    otherId=await getEmpId('pamela@oktcs.net');
+  }
+  if(!otherId){ renderDemoMessages(); return; }
+
+  const msgQuery='or=(and(sender_id.eq.'+user.dbId+',receiver_id.eq.'+otherId+'),and(sender_id.eq.'+otherId+',receiver_id.eq.'+user.dbId+'))&order=sent_at.asc&select=*';
+  const data=await sb('GET','messages','',msgQuery);
+
+  // Supabase failed — keep what's showing
+  if(!data) return;
+  // No real messages yet — keep demo
+  if(data.length===0){ if(!usingRealMessages) renderDemoMessages(); return; }
+
+  // Real messages exist — render them
+  usingRealMessages=true;
   thr.innerHTML=data.map(function(m){
     const isSelf=m.sender_id===user.dbId;
     const senderName=isSelf?'You':otherName;
