@@ -1208,7 +1208,7 @@ function renderThread(){
   thr.innerHTML=msgs.map(function(m){
     const isSelf=isAdmin?(m.from==='office'):(m.from==='marcus');
     const names={office:'Office',marcus:'Marcus',ray:'Ray',tanya:'Tanya'};
-    const del=isSelf?'<button class="bbl-del" onclick="delMsg(''+key+'','+m.id+')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>':'';
+    const del=isSelf?'<button class="bbl-del" data-key="'+key+'" data-id="'+m.id+'" onclick="delMsg(this)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>':'';
     return '<div class="bbl-wrap '+(isSelf?'self':'other')+'">'
       +del
       +'<div class="bbl '+(isSelf?'s':'r')+'">'+m.body
@@ -1218,8 +1218,10 @@ function renderThread(){
   thr.scrollTop=thr.scrollHeight;
 }
 
-function delMsg(key,id){
+function delMsg(btn){
   if(!confirm('Delete this message?')) return;
+  const key=btn.getAttribute('data-key');
+  const id=parseInt(btn.getAttribute('data-id'));
   const arr=THREADS[key];
   if(!arr) return;
   const i=arr.findIndex(function(m){return m.id===id;});
